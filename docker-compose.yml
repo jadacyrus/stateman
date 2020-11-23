@@ -1,0 +1,19 @@
+# The DEFAULT docker bridge network does not do automatic name resolution hence links usage.
+# We can get rid of using links if we re-created bridge network ourself.
+version: '2'
+services:
+  stateman_redis:
+    container_name: stateman_redis
+    hostname: stateman_redis
+    restart: unless-stopped
+    image: redis:alpine
+    network_mode: bridge
+    volumes:
+      - stateman-redis-volume:/data
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+
+volumes:
+  stateman-redis-volume:

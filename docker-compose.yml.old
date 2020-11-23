@@ -1,0 +1,87 @@
+# The DEFAULT docker bridge network does not do automatic name resolution hence links usage.
+# We can get rid of using links if we re-created bridge network ourself.
+version: '2'
+services:
+  jadacyrus:
+    restart: unless-stopped
+    hostname: jadacyrus
+    image: nginx:alpine
+    ports:
+      - "80"
+    network_mode: bridge
+    working_dir: "/app"
+    environment:
+      - VIRTUAL_HOST=jadacyrus.com,www.jadacyrus.com,jadacyr.us
+      - LETSENCRYPT_HOST=jadacyrus.com,www.jadacyrus.com,jadacyr.us
+      - LETSENCRYPT_EMAIL=alexurc@gmail.com
+    volumes:
+      - /operations/jadacyrus.com/static:/usr/share/nginx/html:ro
+  slackbot:
+    restart: unless-stopped
+    hostname: slackbot
+    links:
+      - "redis:redis"
+    build:
+      context: ./slackbot
+    entrypoint:
+      - "/app/entrypoint.sh"
+      - "slackbot"
+    ports:
+      - "8080"
+    network_mode: bridge
+    working_dir: "/app"
+    environment:
+      - VIRTUAL_HOST=slackbot.jadacyrus.com,slackbot.jadacyrus.com
+      - LETSENCRYPT_HOST=slackbot.jadacyrus.com,slackbot.jadacyrus.com
+      - LETSENCRYPT_EMAIL=alexurc@gmail.com
+  slackbot_greeter:
+    restart: unless-stopped
+    hostname: slackbot_greeter
+    links:
+      - "redis:redis"
+    build:
+      context: ./slackbot
+    entrypoint:
+      - "/app/entrypoint.sh"
+      - "greeter"
+    network_mode: bridge
+    working_dir: "/app"
+  discordbot:
+    restart: unless-stopped
+    hostname: discordbot
+    links:
+      - "redis:redis"
+    build:
+      context: ./slackbot
+    entrypoint:
+      - "/app/entrypoint.sh"
+      - "discordbot"
+    network_mode: bridge
+    working_dir: "/app"
+  slackbot_cacher:
+    restart: unless-stopped
+    hostname: slackbot_cacher
+    links:
+      - "redis:redis"
+    build:
+      context: ./slackbot
+    entrypoint:
+      - "/app/entrypoint.sh"
+      - "cacher"
+    network_mode: bridge
+    working_dir: "/app"
+  redis:
+    container_name: redis
+    hostname: redis
+    restart: unless-stopped
+    image: redis:alpine
+    network_mode: bridge
+    volumes:
+      - redis-volume:/data
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+
+volumes:
+  redis-volume:
